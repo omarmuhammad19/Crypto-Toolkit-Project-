@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CryptoKit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/node-forge/1.3.1/forge.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#FAFAF8;--bg2:#F3F2EF;--bg3:#ECEAE5;--surface:#FFFFFF;
+  --border:#E2E0DA;--border2:#D0CEC7;
+  --text:#1C1B18;--text2:#6B6860;--text3:#A8A69F;
+  --accent:#2D6A4F;--accent2:#40916C;--accent-bg:#E8F4F0;
+  --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Syne',sans-serif;
+  --r:12px;--r2:8px;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden}
+.logo{padding:24px 20px 20px;border-bottom:1px solid var(--border)}
+.logo-mark{display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
+.logo-name{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px}
+.logo-tag{font-size:11px;color:var(--text3);margin-top:2px;font-weight:400}
+
+.nav{flex:1;overflow-y:auto;padding:12px 10px}
+.nav-section{font-size:10px;font-weight:600;letter-spacing:.8px;color:var(--text3);text-transform:uppercase;padding:16px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r2);cursor:pointer;transition:all .15s;font-size:13.5px;font-weight:400;color:var(--text2);margin-bottom:1px;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--bg2);color:var(--text)}
+.nav-item.active{background:var(--accent-bg);color:var(--accent);font-weight:500}
+.nav-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:10px;background:var(--bg3);padding:2px 7px;border-radius:20px;color:var(--text3)}
+
+.sidebar-footer{padding:14px 16px;border-top:1px solid var(--border)}
+.theme-toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);cursor:pointer;background:none;border:none;width:100%}
+.toggle-pill{width:36px;height:20px;background:var(--bg3);border-radius:10px;position:relative;transition:.2s;border:1px solid var(--border)}
+.toggle-pill::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--text3);border-radius:50%;transition:.2s}
+body.dark .toggle-pill{background:var(--accent);border-color:var(--accent)}
+body.dark .toggle-pill::after{left:18px;background:#fff}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto}
+.section{display:none;padding:0 0 48px}
+.section.active{display:block}
+
+/* HERO */
+.hero{padding:56px 48px 40px;border-bottom:1px solid var(--border)}
+.hero-eyebrow{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.hero-title{font-family:var(--display);font-size:42px;font-weight:700;line-height:1.1;letter-spacing:-.8px;margin-bottom:14px}
+.hero-sub{font-size:16px;color:var(--text2);line-height:1.65;max-width:520px}
+.hero-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:36px}
+.hero-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;transition:.15s}
+.hero-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.hero-card-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.hero-card-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.hero-card h3{font-size:13px;font-weight:600;margin-bottom:4px}
+.hero-card p{font-size:12px;color:var(--text3);line-height:1.5}
+.ic-green{background:var(--accent-bg);color:var(--accent)}
+.ic-amber{background:#FEF6E4;color:#92400E}
+.ic-blue{background:#EFF6FF;color:#1E40AF}
+.ic-purple{background:#F5F3FF;color:#5B21B6}
+
+/* TOOL CONTAINER */
+.tool-wrap{padding:36px 48px 0}
+.tool-header{margin-bottom:28px}
+.tool-eyebrow{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.tool-title{font-family:var(--display);font-size:26px;font-weight:700;letter-spacing:-.4px;margin-bottom:6px}
+.tool-desc{font-size:14px;color:var(--text2);line-height:1.6}
+
+/* PANEL */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+.panel-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-head h3{font-size:13px;font-weight:600;color:var(--text)}
+.panel-body{padding:18px}
+
+/* FORM ELEMENTS */
+label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px}
+input[type=text],textarea,select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:10px 13px;font-family:inherit;font-size:14px;color:var(--text);outline:none;transition:.15s;resize:vertical}
+input[type=text]:focus,textarea:focus,select:focus{border-color:var(--accent);background:var(--surface)}
+textarea{min-height:90px;font-family:var(--mono);font-size:13px;line-height:1.6}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6860' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+
+.field{margin-bottom:14px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.key-input-wrap{display:flex;gap:8px;align-items:center}
+.key-input-wrap input{flex:1}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--r2);font-family:inherit;font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent2)}
+.btn-secondary{background:var(--surface);color:var(--text);border-color:var(--border)}
+.btn-secondary:hover{background:var(--bg2);border-color:var(--border2)}
+.btn-danger{background:#FEF2F2;color:#DC2626;border-color:#FCA5A5}
+.btn-danger:hover{background:#FEE2E2}
+.btn-sm{padding:6px 11px;font-size:12px}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+/* OUTPUT */
+.output-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:13px 15px;font-family:var(--mono);font-size:12.5px;line-height:1.7;min-height:60px;word-break:break-all;color:var(--text);position:relative;white-space:pre-wrap}
+.output-box.empty{color:var(--text3);font-family:var(--sans);font-size:13px;font-style:italic}
+.output-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.output-label span{font-size:12px;font-weight:500;color:var(--text2)}
+
+/* ALGO TABS */
+.algo-tabs{display:flex;gap:2px;background:var(--bg2);padding:3px;border-radius:8px;margin-bottom:18px;border:1px solid var(--border)}
+.algo-tab{flex:1;padding:7px;text-align:center;font-size:13px;font-weight:500;border-radius:6px;cursor:pointer;transition:.15s;color:var(--text2);border:none;background:none}
+.algo-tab.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:1000}
+.toast{background:var(--text);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:.25s;display:flex;align-items:center;gap:8px}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5}
+
+/* KEY BOX */
+.key-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;font-family:var(--mono);font-size:11px;line-height:1.6;word-break:break-all;max-height:120px;overflow-y:auto;color:var(--text2)}
+
+/* HASH DISPLAY */
+.hash-result{background:var(--accent-bg);border:1px solid #B7DDD0;border-radius:var(--r2);padding:12px 14px;font-family:var(--mono);font-size:12px;color:var(--accent);word-break:break-all}
+
+/* EXAMPLES */
+.example-grid{display:grid;gap:12px}
+.example-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.example-head{padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.example-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;letter-spacing:.4px}
+.example-body{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.example-field{}
+.example-field .ef-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.example-field .ef-val{font-family:var(--mono);font-size:12px;word-break:break-all;line-height:1.5;color:var(--text)}
+
+/* COMPARE */
+.compare-input{display:flex;gap:8px;margin-bottom:8px}
+.compare-result{padding:8px 12px;border-radius:var(--r2);font-size:13px;font-weight:500;display:none}
+.compare-result.match{background:#D1FAE5;color:#065F46;display:block}
+.compare-result.nomatch{background:#FEE2E2;color:#991B1B;display:block}
+
+/* STATUS */
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
+.status-ok{background:#10B981}
+.status-err{background:#EF4444}
+
+/* TEAM TABLE */
+.team-table-wrap{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--bg)}
+.team-table{width:100%;border-collapse:collapse}
+.team-table thead th{background:var(--bg2);padding:11px 14px;font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);text-align:left}
+.team-table tbody td{padding:13px 14px;font-size:13.5px;color:var(--text);vertical-align:middle}
+.team-table tbody tr:not(:last-child) td{border-bottom:1px solid var(--border)}
+.team-table tbody tr:hover{background:var(--surface)}
+.team-table .member-name{font-weight:500;letter-spacing:.1px}
+.team-table .member-code{font-family:var(--mono);font-size:12.5px;color:var(--accent)}
+
+/* ABOUT */
+.algo-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px}
+.algo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.algo-card h3{font-size:14px;font-weight:600;margin-bottom:6px}
+.algo-card p{font-size:13px;color:var(--text2);line-height:1.6}
+.algo-card .tag{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:3px 8px;border-radius:20px;display:inline-block;margin-bottom:8px}
+
+/* DARK MODE */
+body.dark{
+  --bg:#1A1A18;--bg2:#222220;--bg3:#2A2A28;--surface:#222220;
+  --border:#333330;--border2:#444440;
+  --text:#ECEAE5;--text2:#9B9990;--text3:#666460;
+  --accent:#52B788;--accent2:#74C69D;--accent-bg:#162820;
+}
+body.dark .hero-card:hover{transform:none}
+body.dark .hash-result{border-color:#2D5A4A}
+body.dark select{background-color:var(--bg)}
+body.dark input[type=text],body.dark textarea{background:var(--bg2)}
+
+@media(max-width:700px){
+  .app{grid-template-columns:1fr}
+  .sidebar{height:auto;position:static;flex-direction:row;overflow-x:auto}
+  .hero{padding:32px 20px 24px}
+  .tool-wrap{padding:24px 20px 0}
+  .hero-cards{grid-template-columns:1fr 1fr}
+  .hero-title{font-size:28px}
+  .row{grid-template-columns:1fr}
+  .example-body{grid-template-columns:1fr}
+  .algo-grid{grid-template-columns:1fr}
+  .nav{display:flex;flex-direction:row;gap:2px;padding:8px}
+  .nav-section{display:none}
+  .nav-item{white-space:nowrap}
+  .logo{display:none}
+  .sidebar-footer{display:none}
+}
+</style>
+</head>
+<body>
+<div class="toast-container" id="toasts"></div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <div>
+          <div class="logo-name">CryptoKit</div>
+          <div class="logo-tag">Cryptography Toolkit</div>
+        </div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Overview</div>
+      <button class="nav-item active" onclick="showSection('home')">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </button>
+      <div class="nav-section">Tools</div>
+      <button class="nav-item" onclick="showSection('symmetric')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Symmetric <span class="nav-badge">AES DES</span>
+      </button>
+      <button class="nav-item" onclick="showSection('rsa')">
+        <svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        RSA Keys
+      </button>
+      <button class="nav-item" onclick="showSection('encoding')">
+        <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Encoding
+      </button>
+      <button class="nav-item" onclick="showSection('hashing')">
+        <svg viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+        Hashing
+      </button>
+      <div class="nav-section">Reference</div>
+      <button class="nav-item" onclick="showSection('about')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        About Algorithms
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="theme-toggle" onclick="toggleDark()">
+        <div class="toggle-pill"></div>
+        <span>Dark mode</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- HOME -->
+    <section class="section active" id="home">
+      <div class="hero">
+        <div class="hero-eyebrow">Alexandria University Cryptography Project</div>
+        <h1 class="hero-title">Cryptography<br>Toolkit</h1>
+        <p class="hero-sub">A complete implementation of symmetric encryption, asymmetric RSA, encoding schemes, and cryptographic hashing — all functional and ready to use.</p>
+        <div class="hero-cards">
+          <div class="hero-card" onclick="showSection('symmetric')" style="cursor:pointer">
+            <div class="hero-card-icon ic-green"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+            <h3>Symmetric</h3><p>AES, DES, 3DES encryption & decryption</p>
+          </div>
+          <div class="hero-card" onclick="showSection('rsa')" style="cursor:pointer">
+            <div class="hero-card-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div>
+            <h3>RSA</h3><p>Key generation, encrypt & decrypt</p>
+          </div>
+          <div class="hero-card" onclick="showSection('encoding')" style="cursor:pointer">
+            <div class="hero-card-icon ic-blue"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+            <h3>Encoding</h3><p>Base64, Hex, URL encode & decode</p>
+          </div>
+          <div class="hero-card" onclick="showSection('hashing')" style="cursor:pointer">
+            <div class="hero-card-icon ic-purple"><svg viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg></div>
+            <h3>Hashing</h3><p>SHA-256, SHA-512, MD5, salted</p>
+          </div>
+        </div>
+      </div>
+      <div class="tool-wrap" style="margin-top:28px">
+        <div class="panel">
+          <div class="panel-head"><h3>Team member</h3></div>
+          <div class="panel-body">
+            <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px">Project team members</p>
+            <div class="team-table-wrap">
+              <table class="team-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="member-name">ِAbdelrahman Ahmed Abdelhamied</td>
+                    <td class="member-code">2406244856</td>
+                  </tr>
+                  <tr>
+                    <td class="member-name">Mahmoud Osama Elsayed</td>
+                    <td class="member-code">2406241599</td>
+                  </tr>
+                  <tr>
+                    <td class="member-name">Omar Muhammad Muhammad</td>
+                    <td class="member-code">2406241065</td>
+                  </tr>
+                  <tr>
+                    <td class="member-name">Adel George Adel</td>
+                    <td class="member-code">2406245614</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SYMMETRIC -->
+    <section class="section" id="symmetric">
+      <div class="tool-wrap">
+        <div class="tool-header">
+          <div class="tool-eyebrow">Block Ciphers</div>
+          <h2 class="tool-title">Symmetric Encryption</h2>
+          <p class="tool-desc">Encrypt and decrypt text using a shared secret key. Supports AES-256, DES, and Triple-DES.</p>
+        </div>
+        <div class="algo-tabs">
+          <button class="algo-tab active" onclick="setSymAlgo('AES',this)">AES-256</button>
+          <button class="algo-tab" onclick="setSymAlgo('DES',this)">DES</button>
+          <button class="algo-tab" onclick="setSymAlgo('TripleDES',this)">3DES</button>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Input</h3></div>
+          <div class="panel-body">
+            <div class="field"><label>Plaintext / Ciphertext</label><textarea id="sym-input" placeholder="Enter text to encrypt or paste ciphertext to decrypt..."></textarea></div>
+            <div class="row">
+              <div class="field">
+                <label>Secret Key</label>
+                <div class="key-input-wrap">
+                  <input type="text" id="sym-key" placeholder="Enter secret key...">
+                  <button class="btn btn-secondary btn-sm" onclick="generateSymKey()" type="button">
+                    <svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M3 12h18"/><circle cx="12" cy="12" r="3"/></svg>
+                    Random Key
+                  </button>
+                </div>
+              </div>
+              <div class="field"><label>Algorithm</label><input type="text" id="sym-algo-display" value="AES-256" readonly style="background:var(--bg3);color:var(--text2)"></div>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="symEncrypt()"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>Encrypt</button>
+              <button class="btn btn-secondary" onclick="symDecrypt()"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 01-2-9.33V4"/><path d="M12 2v4"/></svg>Decrypt</button>
+              <button class="btn btn-secondary" onclick="clearSym()"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 101.493-5.5"/></svg>Clear</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Output</h3>
+            <button class="btn btn-sm btn-secondary" onclick="copyOut('sym-out')"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button>
+          </div>
+          <div class="panel-body">
+            <div id="sym-out" class="output-box empty">Result will appear here...</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>How it works</h3></div>
+          <div class="panel-body" style="font-size:13px;color:var(--text2);line-height:1.7">
+            <strong id="sym-algo-name" style="color:var(--text)">AES-256</strong> uses a shared secret key for both encryption and decryption. The output is Base64-encoded and includes the IV (Initialization Vector) for security. DES uses a 64-bit key; 3DES applies DES three times for stronger security; AES-256 is the modern standard.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RSA -->
+    <section class="section" id="rsa">
+      <div class="tool-wrap">
+        <div class="tool-header">
+          <div class="tool-eyebrow">Asymmetric Encryption</div>
+          <h2 class="tool-title">RSA Keys & Encryption</h2>
+          <p class="tool-desc">Generate RSA key pairs, encrypt with the public key, and decrypt with the private key.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Key Generation</h3><button class="btn btn-primary btn-sm" onclick="generateRSA()" id="rsa-gen-btn"><svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>Generate 2048-bit Keys</button></div>
+          <div class="panel-body">
+            <div id="rsa-keys-placeholder" style="text-align:center;padding:24px;color:var(--text3);font-size:13px">
+              <svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:var(--text3);fill:none;stroke-width:1.5;margin:0 auto 10px;display:block"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+              Click "Generate 2048-bit Keys" to create a new RSA key pair
+            </div>
+            <div id="rsa-keys-display" style="display:none">
+              <div class="row">
+                <div>
+                  <div class="output-label"><span>Public Key</span><button class="btn btn-sm btn-secondary" onclick="copyOut('rsa-pub-key')">Copy</button></div>
+                  <div id="rsa-pub-key" class="key-box"></div>
+                </div>
+                <div>
+                  <div class="output-label"><span>Private Key</span><button class="btn btn-sm btn-secondary" onclick="copyOut('rsa-priv-key')">Copy</button></div>
+                  <div id="rsa-priv-key" class="key-box"></div>
+                </div>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-sm btn-secondary" onclick="downloadKeys()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Keys</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Encrypt with Public Key</h3></div>
+          <div class="panel-body">
+            <div class="field"><label>Plaintext</label><textarea id="rsa-plain" placeholder="Enter message to encrypt..." style="min-height:70px"></textarea></div>
+            <div class="btn-group"><button class="btn btn-primary" onclick="rsaEncrypt()"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>Encrypt</button></div>
+            <div style="margin-top:14px">
+              <div class="output-label"><span>Encrypted (Base64)</span><button class="btn btn-sm btn-secondary" onclick="copyOut('rsa-cipher')">Copy</button></div>
+              <div id="rsa-cipher" class="output-box empty">Encrypted text will appear here...</div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Decrypt with Private Key</h3></div>
+          <div class="panel-body">
+            <div class="field"><label>Ciphertext (Base64)</label><textarea id="rsa-decrypt-input" placeholder="Paste encrypted text here..." style="min-height:70px"></textarea></div>
+            <div class="btn-group"><button class="btn btn-primary" onclick="rsaDecrypt()"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/></svg>Decrypt</button></div>
+            <div style="margin-top:14px">
+              <div class="output-label"><span>Decrypted Text</span><button class="btn btn-sm btn-secondary" onclick="copyOut('rsa-decrypted')">Copy</button></div>
+              <div id="rsa-decrypted" class="output-box empty">Decrypted text will appear here...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ENCODING -->
+    <section class="section" id="encoding">
+      <div class="tool-wrap">
+        <div class="tool-header">
+          <div class="tool-eyebrow">Data Representation</div>
+          <h2 class="tool-title">Encoding & Decoding</h2>
+          <p class="tool-desc">Convert text between different encoding formats. Base64, hexadecimal, and URL encoding.</p>
+        </div>
+        <div class="algo-tabs">
+          <button class="algo-tab active" onclick="setEncAlgo('base64',this)">Base64</button>
+          <button class="algo-tab" onclick="setEncAlgo('hex',this)">Hex</button>
+          <button class="algo-tab" onclick="setEncAlgo('url',this)">URL</button>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Input Text</h3></div>
+          <div class="panel-body">
+            <div class="field"><textarea id="enc-input" placeholder="Enter text to encode or decode..." oninput="liveEncode()"></textarea></div>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="doEncode()"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Encode</button>
+              <button class="btn btn-secondary" onclick="doDecode()">Decode</button>
+              <button class="btn btn-secondary" onclick="clearEnc()">Clear</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Output</h3><button class="btn btn-sm btn-secondary" onclick="copyOut('enc-out')">Copy</button></div>
+          <div class="panel-body">
+            <div id="enc-out" class="output-box empty">Result will appear here...</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Live Preview</h3></div>
+          <div class="panel-body" style="font-size:13px;color:var(--text2);line-height:1.7">
+            <div id="enc-live" style="font-family:var(--mono);font-size:12px;word-break:break-all;color:var(--text3)">Type in the input to see a live preview...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HASHING -->
+    <section class="section" id="hashing">
+      <div class="tool-wrap">
+        <div class="tool-header">
+          <div class="tool-eyebrow">One-Way Functions</div>
+          <h2 class="tool-title">Cryptographic Hashing</h2>
+          <p class="tool-desc">Generate irreversible hashes. Supports SHA-256, SHA-512, MD5, and salted hashing.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Hash Generator</h3></div>
+          <div class="panel-body">
+            <div class="field"><label>Input Text</label><textarea id="hash-input" placeholder="Enter text to hash..." style="min-height:80px"></textarea></div>
+            <div class="row">
+              <div class="field"><label>Algorithm</label>
+                <select id="hash-algo">
+                  <option value="SHA256">SHA-256</option>
+                  <option value="SHA512">SHA-512</option>
+                  <option value="MD5">MD5</option>
+                  <option value="SHA1">SHA-1</option>
+                </select>
+              </div>
+              <div class="field"><label>Salt (optional)</label><input type="text" id="hash-salt" placeholder="Add salt for stronger hashing..."></div>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="doHash()"><svg viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>Generate Hash</button>
+              <button class="btn btn-secondary" onclick="clearHash()">Clear</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Hash Result</h3><button class="btn btn-sm btn-secondary" onclick="copyOut('hash-result')">Copy</button></div>
+          <div class="panel-body">
+            <div id="hash-result" class="output-box empty">Hash will appear here...</div>
+            <div id="hash-meta" style="font-size:12px;color:var(--text3);margin-top:8px;display:none"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Hash Compare</h3></div>
+          <div class="panel-body">
+            <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Verify if two hashes match (e.g. check file integrity).</p>
+            <div class="field"><label>Hash A</label><input type="text" id="hash-a" placeholder="Paste first hash..." style="font-family:var(--mono);font-size:12px"></div>
+            <div class="field"><label>Hash B</label><input type="text" id="hash-b" placeholder="Paste second hash..." style="font-family:var(--mono);font-size:12px"></div>
+            <div class="btn-group"><button class="btn btn-secondary" onclick="compareHashes()">Compare Hashes</button></div>
+            <div id="compare-result" class="compare-result" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="section" id="about">
+      <div class="tool-wrap">
+        <div class="tool-header">
+          <div class="tool-eyebrow">Reference</div>
+          <h2 class="tool-title">About the Algorithms</h2>
+          <p class="tool-desc">Brief explanations of each cryptographic algorithm and technique implemented in this toolkit.</p>
+        </div>
+        <div class="algo-grid">
+          <div class="algo-card">
+            <span class="tag" style="background:#E8F4F0;color:#2D6A4F">Symmetric</span>
+            <h3>AES — Advanced Encryption Standard</h3>
+            <p>A block cipher operating on 128-bit blocks with 128, 192, or 256-bit keys. This toolkit uses AES-256 in CBC mode — the global encryption standard, used in TLS, banking, and government systems.</p>
+          </div>
+          <div class="algo-card">
+            <span class="tag" style="background:#E8F4F0;color:#2D6A4F">Symmetric</span>
+            <h3>DES — Data Encryption Standard</h3>
+            <p>A 64-bit block cipher with a 56-bit effective key length. Now considered insecure due to its short key size, but historically significant. Replaced by 3DES and later AES.</p>
+          </div>
+          <div class="algo-card">
+            <span class="tag" style="background:#E8F4F0;color:#2D6A4F">Symmetric</span>
+            <h3>3DES — Triple DES</h3>
+            <p>Applies DES three times (encrypt → decrypt → encrypt) with two or three different keys, yielding 112–168 bits of effective security. A bridge between DES and AES, still used in legacy banking systems.</p>
+          </div>
+          <div class="algo-card">
+            <span class="tag" style="background:#FEF6E4;color:#92400E">Asymmetric</span>
+            <h3>RSA — Rivest–Shamir–Adleman</h3>
+            <p>Public-key cryptosystem based on the difficulty of factoring large integers. A public key encrypts data; only the matching private key can decrypt it. 2048-bit keys are the current minimum recommendation.</p>
+          </div>
+          <div class="algo-card">
+            <span class="tag" style="background:#EFF6FF;color:#1E40AF">Encoding</span>
+            <h3>Base64</h3>
+            <p>Encodes binary data as 64 printable ASCII characters. Not encryption — it's reversible without a key. Used for transmitting data over text-based protocols like email and HTTP.</p>
+          </div>
+          <div class="algo-card">
+            <span class="tag" style="background:#EFF6FF;color:#1E40AF">Encoding</span>
+            <h3>Hexadecimal & URL Encoding</h3>
+            <p>Hex encodes each byte as two hex digits (00–FF). URL encoding replaces unsafe characters with %XX sequences, enabling safe transmission of data in URLs and HTTP forms.</p>
+          </div>
+          <div class="algo-card">
+            <span class="tag" style="background:#F5F3FF;color:#5B21B6">Hashing</span>
+            <h3>SHA-256 & SHA-512</h3>
+            <p>Members of the SHA-2 family. SHA-256 produces a 256-bit digest; SHA-512 produces 512 bits. Cryptographically collision-resistant and widely used in digital signatures, certificates, and blockchain.</p>
+          </div>
+          <div class="algo-card">
+            <span class="tag" style="background:#FFF7ED;color:#9A3412">Salted</span>
+            <h3>Salted Hashing</h3>
+            <p>Prepends a random "salt" value to the input before hashing. This prevents pre-computed rainbow table attacks, ensuring that the same password hashed twice yields different results.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+let currentSymAlgo = 'AES';
+let currentEncAlgo = 'base64';
+let rsaPublicKey = null;
+let rsaPrivateKey = null;
+let rsaPublicCryptoKey = null;
+let rsaPrivateCryptoKey = null;
+const RSA_GEN_BUTTON_HTML = '<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>Generate 2048-bit Keys';
+
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const btns = document.querySelectorAll('.nav-item');
+  btns.forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+id+"'"))b.classList.add('active')});
+}
+
+function toggleDark(){document.body.classList.toggle('dark')}
+
+function toast(msg,ok=true){
+  const c=document.getElementById('toasts');
+  const t=document.createElement('div');
+  t.className='toast';
+  t.innerHTML=`<svg viewBox="0 0 24 24"><polyline points="${ok?'20 6 9 17 4 12':'18 6 6 18 6 6 18 18'}"/></svg>${msg}`;
+  c.appendChild(t);
+  requestAnimationFrame(()=>{requestAnimationFrame(()=>t.classList.add('show'))});
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300)},2500);
+}
+
+function setOut(id,val,empty=false){
+  const el=document.getElementById(id);
+  el.textContent=val;
+  el.classList.toggle('empty',empty);
+}
+
+function copyOut(id){
+  const el=document.getElementById(id);
+  const text=el.textContent;
+  if(!text||el.classList.contains('empty')){toast('Nothing to copy',false);return}
+  navigator.clipboard.writeText(text).then(()=>toast('Copied to clipboard')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Copied!');
+  });
+}
+
+/* SYMMETRIC */
+function setSymAlgo(algo,btn){
+  currentSymAlgo=algo;
+  document.querySelectorAll('.algo-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  const names={AES:'AES-256',DES:'DES',TripleDES:'3DES'};
+  document.getElementById('sym-algo-display').value=names[algo];
+  document.getElementById('sym-algo-name').textContent=names[algo];
+}
+function randomHex(bytes){
+  const arr=new Uint8Array(bytes);
+  if(window.crypto&&window.crypto.getRandomValues)window.crypto.getRandomValues(arr);
+  else for(let i=0;i<arr.length;i++)arr[i]=Math.floor(Math.random()*256);
+  return Array.from(arr,b=>b.toString(16).padStart(2,'0')).join('');
+}
+function generateSymKey(){
+  const keyBytes={AES:32,DES:8,TripleDES:24};
+  const labels={AES:'AES-256',DES:'DES',TripleDES:'3DES'};
+  const key=randomHex(keyBytes[currentSymAlgo]||32);
+  document.getElementById('sym-key').value=key;
+  toast(`Random ${labels[currentSymAlgo]||'AES-256'} key generated`);
+}
+function symEncrypt(){
+  const txt=document.getElementById('sym-input').value.trim();
+  const key=document.getElementById('sym-key').value.trim();
+  if(!txt){toast('Enter text to encrypt',false);return}
+  if(!key){toast('Enter a secret key',false);return}
+  try{
+    let enc;
+    const cjsKey=CryptoJS.enc.Utf8.parse(key);
+    if(currentSymAlgo==='AES')enc=CryptoJS.AES.encrypt(txt,key).toString();
+    else if(currentSymAlgo==='DES')enc=CryptoJS.DES.encrypt(txt,key).toString();
+    else enc=CryptoJS.TripleDES.encrypt(txt,key).toString();
+    setOut('sym-out',enc);
+    toast('Encrypted successfully');
+  }catch(e){toast('Encryption failed: '+e.message,false)}
+}
+function symDecrypt(){
+  const txt=document.getElementById('sym-input').value.trim();
+  const key=document.getElementById('sym-key').value.trim();
+  if(!txt){toast('Enter ciphertext to decrypt',false);return}
+  if(!key){toast('Enter the secret key',false);return}
+  try{
+    let dec;
+    if(currentSymAlgo==='AES')dec=CryptoJS.AES.decrypt(txt,key).toString(CryptoJS.enc.Utf8);
+    else if(currentSymAlgo==='DES')dec=CryptoJS.DES.decrypt(txt,key).toString(CryptoJS.enc.Utf8);
+    else dec=CryptoJS.TripleDES.decrypt(txt,key).toString(CryptoJS.enc.Utf8);
+    if(!dec){toast('Decryption failed — wrong key?',false);return}
+    setOut('sym-out',dec);
+    toast('Decrypted successfully');
+  }catch(e){toast('Decryption error: '+e.message,false)}
+}
+function clearSym(){document.getElementById('sym-input').value='';setOut('sym-out','Result will appear here...',true)}
+
+/* RSA */
+function arrayBufferToBase64(buffer){
+  const bytes=new Uint8Array(buffer);
+  let binary='';
+  const chunk=0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
+  }
+  return btoa(binary);
+}
+function base64ToArrayBuffer(base64){
+  const binary=atob(base64);
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  return bytes.buffer;
+}
+function arrayBufferToPem(buffer,label){
+  const b64=arrayBufferToBase64(buffer);
+  const lines=b64.match(/.{1,64}/g)||[];
+  return `-----BEGIN ${label}-----\n${lines.join('\n')}\n-----END ${label}-----`;
+}
+
+async function generateRSA(){
+  const btn=document.getElementById('rsa-gen-btn');
+  btn.textContent='Generating...';btn.disabled=true;
+  try{
+    if(window.crypto&&window.crypto.subtle){
+      const pair=await window.crypto.subtle.generateKey(
+        {
+          name:'RSA-OAEP',
+          modulusLength:2048,
+          publicExponent:new Uint8Array([1,0,1]),
+          hash:'SHA-256'
+        },
+        true,
+        ['encrypt','decrypt']
+      );
+      rsaPublicCryptoKey=pair.publicKey;
+      rsaPrivateCryptoKey=pair.privateKey;
+      const [spki,pkcs8]=await Promise.all([
+        window.crypto.subtle.exportKey('spki',pair.publicKey),
+        window.crypto.subtle.exportKey('pkcs8',pair.privateKey)
+      ]);
+      rsaPublicKey=arrayBufferToPem(spki,'PUBLIC KEY');
+      rsaPrivateKey=arrayBufferToPem(pkcs8,'PRIVATE KEY');
+    }else if(window.forge&&forge.pki&&forge.pki.rsa){
+      rsaPublicCryptoKey=null;
+      rsaPrivateCryptoKey=null;
+      const kp=forge.pki.rsa.generateKeyPair({bits:2048,e:0x10001});
+      rsaPublicKey=forge.pki.publicKeyToPem(kp.publicKey);
+      rsaPrivateKey=forge.pki.privateKeyToPem(kp.privateKey);
+    }else{
+      throw new Error('No supported crypto API available');
+    }
+    document.getElementById('rsa-pub-key').textContent=rsaPublicKey;
+    document.getElementById('rsa-priv-key').textContent=rsaPrivateKey;
+    document.getElementById('rsa-keys-display').style.display='block';
+    document.getElementById('rsa-keys-placeholder').style.display='none';
+    toast('2048-bit RSA keys generated');
+  }catch(e){toast('Key generation failed: '+e.message,false)}
+  btn.innerHTML=RSA_GEN_BUTTON_HTML;
+  btn.disabled=false;
+}
+async function rsaEncrypt(){
+  if(!rsaPublicKey){toast('Generate keys first',false);return}
+  const msg=document.getElementById('rsa-plain').value.trim();
+  if(!msg){toast('Enter text to encrypt',false);return}
+  try{
+    let enc;
+    if(rsaPublicCryptoKey&&window.crypto&&window.crypto.subtle){
+      const encrypted=await window.crypto.subtle.encrypt(
+        {name:'RSA-OAEP'},
+        rsaPublicCryptoKey,
+        new TextEncoder().encode(msg)
+      );
+      enc=arrayBufferToBase64(encrypted);
+    }else if(window.forge&&forge.pki){
+      const pub=forge.pki.publicKeyFromPem(rsaPublicKey);
+      enc=forge.util.encode64(pub.encrypt(forge.util.encodeUtf8(msg),'RSA-OAEP'));
+    }else{
+      throw new Error('No supported RSA encryption API available');
+    }
+    setOut('rsa-cipher',enc);
+    document.getElementById('rsa-decrypt-input').value=enc;
+    toast('Encrypted with public key');
+  }catch(e){toast('Encryption error: '+e.message,false)}
+}
+async function rsaDecrypt(){
+  if(!rsaPrivateKey){toast('Generate keys first',false);return}
+  const cipher=document.getElementById('rsa-decrypt-input').value.trim();
+  if(!cipher){toast('Enter ciphertext',false);return}
+  try{
+    let dec;
+    if(rsaPrivateCryptoKey&&window.crypto&&window.crypto.subtle){
+      const decrypted=await window.crypto.subtle.decrypt(
+        {name:'RSA-OAEP'},
+        rsaPrivateCryptoKey,
+        base64ToArrayBuffer(cipher)
+      );
+      dec=new TextDecoder().decode(decrypted);
+    }else if(window.forge&&forge.pki){
+      const priv=forge.pki.privateKeyFromPem(rsaPrivateKey);
+      dec=forge.util.decodeUtf8(priv.decrypt(forge.util.decode64(cipher),'RSA-OAEP'));
+    }else{
+      throw new Error('No supported RSA decryption API available');
+    }
+    setOut('rsa-decrypted',dec);
+    toast('Decrypted with private key');
+  }catch(e){toast('Decryption error: '+e.message,false)}
+}
+function downloadKeys(){
+  if(!rsaPublicKey)return;
+  [['public_key.pem',rsaPublicKey],['private_key.pem',rsaPrivateKey]].forEach(([name,content])=>{
+    const a=document.createElement('a');
+    a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(content);
+    a.download=name;a.click();
+  });
+  toast('Keys downloaded');
+}
+
+/* ENCODING */
+function setEncAlgo(algo,btn){
+  currentEncAlgo=algo;
+  document.querySelectorAll('.algo-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  liveEncode();
+}
+function doEncode(){
+  const txt=document.getElementById('enc-input').value;
+  if(!txt){toast('Enter text to encode',false);return}
+  try{
+    let out;
+    if(currentEncAlgo==='base64')out=btoa(unescape(encodeURIComponent(txt)));
+    else if(currentEncAlgo==='hex')out=Array.from(new TextEncoder().encode(txt)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    else out=encodeURIComponent(txt);
+    setOut('enc-out',out);toast('Encoded');
+  }catch(e){toast('Encoding error',false)}
+}
+function doDecode(){
+  const txt=document.getElementById('enc-input').value.trim();
+  if(!txt){toast('Enter text to decode',false);return}
+  try{
+    let out;
+    if(currentEncAlgo==='base64')out=decodeURIComponent(escape(atob(txt)));
+    else if(currentEncAlgo==='hex'){
+      const bytes=txt.match(/.{1,2}/g).map(b=>parseInt(b,16));
+      out=new TextDecoder().decode(new Uint8Array(bytes));
+    }else out=decodeURIComponent(txt);
+    setOut('enc-out',out);toast('Decoded');
+  }catch(e){toast('Decode error — check input format',false)}
+}
+function liveEncode(){
+  const txt=document.getElementById('enc-input').value;
+  if(!txt){document.getElementById('enc-live').textContent='Type in the input to see a live preview...';return}
+  try{
+    let out;
+    if(currentEncAlgo==='base64')out=btoa(unescape(encodeURIComponent(txt)));
+    else if(currentEncAlgo==='hex')out=Array.from(new TextEncoder().encode(txt)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    else out=encodeURIComponent(txt);
+    document.getElementById('enc-live').textContent=out;
+  }catch(e){}
+}
+function clearEnc(){document.getElementById('enc-input').value='';setOut('enc-out','Result will appear here...',true);document.getElementById('enc-live').textContent='Type in the input to see a live preview...'}
+
+/* HASHING */
+function doHash(){
+  const txt=document.getElementById('hash-input').value;
+  const salt=document.getElementById('hash-salt').value;
+  const algo=document.getElementById('hash-algo').value;
+  if(!txt){toast('Enter text to hash',false);return}
+  const input=salt?salt+txt:txt;
+  let hash;
+  if(algo==='SHA256')hash=CryptoJS.SHA256(input).toString();
+  else if(algo==='SHA512')hash=CryptoJS.SHA512(input).toString();
+  else if(algo==='MD5')hash=CryptoJS.MD5(input).toString();
+  else hash=CryptoJS.SHA1(input).toString();
+  setOut('hash-result',hash);
+  const meta=document.getElementById('hash-meta');
+  meta.style.display='block';
+  meta.textContent=`${algo} · ${hash.length*4} bits · ${hash.length} hex chars${salt?' · Salted':''}`;
+  toast('Hash generated');
+}
+function clearHash(){
+  document.getElementById('hash-input').value='';
+  document.getElementById('hash-salt').value='';
+  setOut('hash-result','Hash will appear here...',true);
+  document.getElementById('hash-meta').style.display='none';
+}
+function compareHashes(){
+  const a=document.getElementById('hash-a').value.trim().toLowerCase();
+  const b=document.getElementById('hash-b').value.trim().toLowerCase();
+  const res=document.getElementById('compare-result');
+  if(!a||!b){toast('Enter both hashes',false);return}
+  res.className='compare-result '+(a===b?'match':'nomatch');
+  res.textContent=a===b?'✓ Hashes match — values are identical':'✗ Hashes do not match';
+}
+
+</script>
+</body>
+</html>
